@@ -1,5 +1,6 @@
 import random
 import curses
+import time
 
 def create_food(snake, window, sh, sw):
     food = None
@@ -60,7 +61,17 @@ def snake_game(stdscr):
             w.addch(tail[0], tail[1], ' ')
 
         # Check for collisions with the border
-        if snake[0][0] in [1, sh-2] or snake[0][1]  in [1, sw-2] or snake[0] in snake[1:]:
+        if snake[0][0] in [1, sh-2] or snake[0][1] in [1, sw-2]:
+            print("Collision with border detected.")  # Debugging print
+            print("Game Over! Score: {}".format(score))  # Debugging print
+            time.sleep(5)  # Wait for 5 seconds before breaking
+            break
+
+        # Check for collision with itself
+        if snake[0] in snake[1:]:
+            print("Collision with self detected.")  # Debugging print
+            print("Game Over! Score: {}".format(score))  # Debugging print
+            time.sleep(5)  # Wait for 5 seconds before breaking
             break
 
         try:
@@ -69,9 +80,23 @@ def snake_game(stdscr):
         except:
             break  # In case the snake tries to go outside the bounds
 
-    stdscr.addstr(sh//2, sw//2, "Game Over! Score: {}".format(score))
-    stdscr.refresh()
-    stdscr.getch()
+    # Debugging: Print a message to indicate we're out of the game loop
+    print("Exited game loop, attempting to display score.")
+
+    # Ensure the message is printed within the window and the window is refreshed
+    try:
+        # Clear the window and print the game over message with the score
+        w.clear()
+        w.addstr(sh//2, sw//2 - len("Game Over! Score: ")//2, "Game Over! Score: {}".format(score))
+        w.refresh()
+        w.getch()
+    except Exception as e:
+        # If there's an error, print it to the terminal
+        stdscr.clear()
+        print("An error occurred while displaying the score: " + str(e))  # Debugging print
+        stdscr.addstr(0, 0, "An error occurred: " + str(e))
+        stdscr.refresh()
+        stdscr.getch()
 
 def main():
     curses.wrapper(snake_game)
