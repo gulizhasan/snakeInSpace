@@ -2,6 +2,7 @@ import random
 import curses
 import time
 
+
 def create_food(snake, window, sh, sw):
     food = None
     while food is None:
@@ -11,7 +12,22 @@ def create_food(snake, window, sh, sw):
     window.addch(food[0], food[1], curses.ACS_PI)
     return food
 
+
+def create_meteors(snake, food, window, sh, sw, num_meteors=5):
+    meteors = []
+    while len(meteors) < num_meteors:
+        meteor = [random.randint(1, sh - 2), random.randint(1, sw - 2)]
+        if meteor not in snake and meteor != food:
+            window.addch(meteor[0], meteor[1], '*',
+                         curses.color_pair(1))  # Use the color pair
+            meteors.append(meteor)
+    return meteors
+
+
 def snake_game(stdscr):
+    curses.start_color()  # Start color functionality
+    # Define colour for meteors
+    curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.curs_set(0)  # Hide the cursor
     sh, sw = stdscr.getmaxyx()  # Get the window's height and width
     w = curses.newwin(sh, sw, 0, 0)  # Create a new window for the game
@@ -26,8 +42,13 @@ def snake_game(stdscr):
         [snake_y, snake_x-1],
         [snake_y, snake_x-2]
     ]
+
+    # Generate food
     food = create_food(snake, w, sh, sw)
     w.addch(food[0], food[1], curses.ACS_PI)
+
+    # Generate meteors
+    meteors = create_meteors(snake, food, w, sh, sw)
 
     key = curses.KEY_RIGHT  # Start by moving the snake to the right
 
@@ -74,6 +95,13 @@ def snake_game(stdscr):
             time.sleep(5)  # Wait for 5 seconds before breaking
             break
 
+        # Check for collision with a meteor
+        if snake[0] in meteors:
+            print("Collision with meteor detected.")  # Debugging print
+            print("Game Over! Score: {}".format(score))  # Debugging print
+            time.sleep(5)  # Wait for 5 seconds before breaking
+            break
+
         try:
             # Draw the new head of the snake
             w.addch(snake[0][0], snake[0][1], curses.ACS_CKBOARD)
@@ -87,19 +115,23 @@ def snake_game(stdscr):
     try:
         # Clear the window and print the game over message with the score
         w.clear()
-        w.addstr(sh//2, sw//2 - len("Game Over! Score: ")//2, "Game Over! Score: {}".format(score))
+        w.addstr(sh//2, sw//2 - len("Game Over! Score: ") //
+                 2, "Game Over! Score: {}".format(score))
         w.refresh()
         w.getch()
     except Exception as e:
         # If there's an error, print it to the terminal
         stdscr.clear()
-        print("An error occurred while displaying the score: " + str(e))  # Debugging print
+        # Debugging print
+        print("An error occurred while displaying the score: " + str(e))
         stdscr.addstr(0, 0, "An error occurred: " + str(e))
         stdscr.refresh()
         stdscr.getch()
 
+
 def main():
     curses.wrapper(snake_game)
+
 
 if __name__ == "__main__":
     main()
