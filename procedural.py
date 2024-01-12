@@ -29,20 +29,24 @@ def create_portals(snake, food, meteors, window, sh, sw):
     while len(portals) < 2:
         portal = [random.randint(1, sh - 2), random.randint(1, sw - 2)]
         if portal not in snake and portal != food and portal not in meteors:
-            window.addch(portal[0], portal[1], 'O',
-                         curses.color_pair(2))  # 'O' for portal
             portals.append(portal)
     return portals
 
 
 def snake_game(stdscr):
     curses.start_color()  # Start color functionality
+
     # Define colours
     curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)  # For meteors
     curses.init_pair(2, curses.COLOR_BLUE, curses.COLOR_BLACK)  # For portals
+
     curses.curs_set(0)  # Hide the cursor
     sh, sw = stdscr.getmaxyx()  # Get the window's height and width
     w = curses.newwin(sh, sw, 0, 0)  # Create a new window for the game
+
+    # Initialize an empty list for active portals
+    active_portals = []
+
     w.keypad(1)  # Enable keypad input
     w.timeout(100)  # Set the screen timeout
 
@@ -107,21 +111,23 @@ def snake_game(stdscr):
             tail = snake.pop()
             w.addch(tail[0], tail[1], ' ')
 
-        # Check if 30 seconds have passed to regenerate portals
+        # Regenerate portals every 30 seconds
         current_time = time.time()
         if current_time - last_portal_time >= 30:
-            # Remove old portals
-            for portal in portals:
+            # Clear old portals
+            for portal in active_portals:
                 w.addch(portal[0], portal[1], ' ')
-            # Create new portals
-            portals = create_portals(snake, food, meteors, w, sh, sw)
-            for portal in portals:
+            # Generate and draw new portals
+            portal_coords = create_portals(snake, food, meteors, w, sh, sw)
+            active_portals = []
+            for portal in portal_coords:
                 w.addch(portal[0], portal[1], 'O', curses.color_pair(2))
+                active_portals.append(portal)
             last_portal_time = current_time
 
-        # Teleportation logic
-        if snake[0] in portals:
-            exit_portal = portals[1] if snake[0] == portals[0] else portals[0]
+        # Teleportation logic (only if portals are active)
+        if any(snake[0] == portal for portal in active_portals):
+            exit_portal = active_portals[1] if snake[0] == active_portals[0] else active_portals[0]
             snake.insert(0, exit_portal)
 
         # Check for collisions with the border
