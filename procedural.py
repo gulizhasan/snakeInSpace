@@ -50,6 +50,8 @@ def snake_game(stdscr):
     w.keypad(1)  # Enable keypad input
     w.timeout(100)  # Set the screen timeout
 
+    easter_egg_shown = False  # Flag to track if the easter egg has been shown
+
     # Draw borders using 'X' characters, but avoid the bottom-right corner
     for x in range(sw - 1):  # Adjusted to avoid the last column
         w.addch(0, x, 'X')
@@ -129,6 +131,32 @@ def snake_game(stdscr):
         if any(snake[0] == portal for portal in active_portals):
             exit_portal = active_portals[1] if snake[0] == active_portals[0] else active_portals[0]
             snake.insert(0, exit_portal)
+
+        # Easter egg trigger
+        if score == 5 and not easter_egg_shown:  # Check if easter egg should be shown
+            easter_egg_shown = True  # Set the flag to True to prevent re-showing
+            w.clear()
+            easter_egg_msg = "20049623"
+            w.addstr(sh//2, (sw - len(easter_egg_msg))//2, easter_egg_msg)
+            w.refresh()
+            time.sleep(3)  # Display the message for 3 seconds
+
+            # Redraw the game state after showing easter egg
+            w.clear()  # Clear the window before redrawing the game state
+            for y, x in snake:
+                w.addch(y, x, curses.ACS_CKBOARD)
+            w.addch(food[0], food[1], curses.ACS_PI)
+            for meteor in meteors:
+                w.addch(meteor[0], meteor[1], '*', curses.color_pair(1))
+            for portal in portals:
+                w.addch(portal[0], portal[1], 'O', curses.color_pair(2))
+            for x in range(sw - 1):
+                w.addch(0, x, 'X')
+                w.addch(sh - 1, x, 'X')
+            for y in range(1, sh - 1):
+                w.addch(y, 0, 'X')
+                w.addch(y, sw - 1, 'X')
+            w.refresh()
 
         # Check for collisions with the border
         if snake[0][0] == 0 or snake[0][0] == sh-1 or snake[0][1] == 0 or snake[0][1] == sw-1:
