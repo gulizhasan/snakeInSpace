@@ -46,6 +46,14 @@ def snake_game(stdscr):
     w.keypad(1)  # Enable keypad input
     w.timeout(100)  # Set the screen timeout
 
+    # Draw borders using 'X' characters, but avoid the bottom-right corner
+    for x in range(sw - 1):  # Adjusted to avoid the last column
+        w.addch(0, x, 'X')
+        w.addch(sh - 1, x, 'X')
+    for y in range(1, sh - 1):  # Start from 1 to avoid overwriting and go up to sh - 1
+        w.addch(y, 0, 'X')
+        w.addch(y, sw - 1, 'X')
+
     # Initialize timer for portals
     last_portal_time = time.time()
 
