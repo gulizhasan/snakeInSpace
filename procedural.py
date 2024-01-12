@@ -47,10 +47,11 @@ def snake_game(stdscr):
     # Initialize an empty list for active portals
     active_portals = []
 
+    # Additional variable to track the deactivated portal
+    deactivated_portal = None
+
     w.keypad(1)  # Enable keypad input
     w.timeout(100)  # Set the screen timeout
-
-    easter_egg_shown = False  # Flag to track if the easter egg has been shown
 
     # Draw borders using 'X' characters, but avoid the bottom-right corner
     for x in range(sw - 1):  # Adjusted to avoid the last column
@@ -79,8 +80,11 @@ def snake_game(stdscr):
     # Generate meteors
     meteors = create_meteors(snake, food, w, sh, sw)
 
-    # Generate portals
+    # Generate initial portals and add them to active_portals
     portals = create_portals(snake, food, meteors, w, sh, sw)
+    active_portals = portals.copy()
+    for portal in portals:
+        w.addch(portal[0], portal[1], 'O', curses.color_pair(2))
 
     key = curses.KEY_RIGHT  # Start by moving the snake to the right
 
@@ -113,50 +117,28 @@ def snake_game(stdscr):
             tail = snake.pop()
             w.addch(tail[0], tail[1], ' ')
 
+        # Teleportation logic
+        if snake[0] in active_portals and snake[0] != deactivated_portal:
+            exit_portal = active_portals[1] if snake[0] == active_portals[0] else active_portals[0]
+            snake.insert(0, [exit_portal[0], exit_portal[1]])
+            # Deactivate the exit portal temporarily
+            deactivated_portal = exit_portal
+
+        # Check if the snake has moved away from the deactivated portal
+        if deactivated_portal and snake[0] != deactivated_portal:
+            deactivated_portal = None  # Reactivate the portal
+
         # Regenerate portals every 30 seconds
         current_time = time.time()
         if current_time - last_portal_time >= 30:
-            # Clear old portals
+            # Clear old portals and update active_portals
             for portal in active_portals:
                 w.addch(portal[0], portal[1], ' ')
-            # Generate and draw new portals
-            portal_coords = create_portals(snake, food, meteors, w, sh, sw)
-            active_portals = []
-            for portal in portal_coords:
-                w.addch(portal[0], portal[1], 'O', curses.color_pair(2))
-                active_portals.append(portal)
-            last_portal_time = current_time
-
-        # Teleportation logic (only if portals are active)
-        if any(snake[0] == portal for portal in active_portals):
-            exit_portal = active_portals[1] if snake[0] == active_portals[0] else active_portals[0]
-            snake.insert(0, exit_portal)
-
-        # Easter egg trigger
-        if score == 5 and not easter_egg_shown:  # Check if easter egg should be shown
-            easter_egg_shown = True  # Set the flag to True to prevent re-showing
-            w.clear()
-            easter_egg_msg = "20049623"
-            w.addstr(sh//2, (sw - len(easter_egg_msg))//2, easter_egg_msg)
-            w.refresh()
-            time.sleep(3)  # Display the message for 3 seconds
-
-            # Redraw the game state after showing easter egg
-            w.clear()  # Clear the window before redrawing the game state
-            for y, x in snake:
-                w.addch(y, x, curses.ACS_CKBOARD)
-            w.addch(food[0], food[1], curses.ACS_PI)
-            for meteor in meteors:
-                w.addch(meteor[0], meteor[1], '*', curses.color_pair(1))
+            portals = create_portals(snake, food, meteors, w, sh, sw)
+            active_portals = portals.copy()
             for portal in portals:
                 w.addch(portal[0], portal[1], 'O', curses.color_pair(2))
-            for x in range(sw - 1):
-                w.addch(0, x, 'X')
-                w.addch(sh - 1, x, 'X')
-            for y in range(1, sh - 1):
-                w.addch(y, 0, 'X')
-                w.addch(y, sw - 1, 'X')
-            w.refresh()
+            last_portal_time = current_time
 
         # Check for collisions with the border
         if snake[0][0] == 0 or snake[0][0] == sh-1 or snake[0][1] == 0 or snake[0][1] == sw-1:
