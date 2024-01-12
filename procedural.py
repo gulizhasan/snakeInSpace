@@ -61,7 +61,7 @@ def snake_game(stdscr):
             w.addch(tail[0], tail[1], ' ')
 
         # Check for collisions with the border
-        if snake[0][0] in [1, sh-2] or snake[0][1] in [1, sw-2]:
+        if snake[0][0] == 0 or snake[0][0] == sh-1 or snake[0][1] == 0 or snake[0][1] == sw-1:
             print("Collision with border detected.")  # Debugging print
             print("Game Over! Score: {}".format(score))  # Debugging print
             time.sleep(5)  # Wait for 5 seconds before breaking
