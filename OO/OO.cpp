@@ -24,6 +24,18 @@ public:
     Meteor(int x, int y) : position(x, y) {}
 };
 
+class Food
+{
+public:
+    Point position;
+
+    // Default constructor
+    Food() : position(-1, -1) {}
+
+    // Constructor with parameters
+    Food(int x, int y) : position(x, y) {}
+};
+
 class Snake
 {
 private:
@@ -67,6 +79,21 @@ public:
         return head.x <= 0 || head.x >= width - 1 || head.y <= 0 || head.y >= height - 1;
     }
 
+    void grow()
+    {
+        body.push_back(body.back()); // Add a new segment at the tail
+    }
+
+    bool eatsFood(const Point &foodPos)
+    {
+        if (body.front().x == foodPos.x && body.front().y == foodPos.y)
+        {
+            grow();
+            return true;
+        }
+        return false;
+    }
+
     void move()
     {
         Point head = body.front();
@@ -93,6 +120,7 @@ class Game
 {
 private:
     Snake snake;
+    Food food;
     int width, height;
     vector<Meteor> meteors; // Store meteor positions
 
@@ -142,6 +170,10 @@ private:
                 {
                     cout << "\033[31m*\033[0m"; // Red meteor
                 }
+                else if (x == food.position.x && y == food.position.y)
+                {
+                    cout << "\u03C0"; // Pi symbol for food
+                }
                 else
                 {
                     cout << " ";
@@ -176,6 +208,19 @@ private:
         }
     }
 
+    void generateFood()
+    {
+        int x, y;
+        do
+        {
+            // Generate positions from 1 to width - 2 and 1 to height - 2 to avoid borders
+            x = 1 + rand() % (width - 2);
+            y = 1 + rand() % (height - 2);
+        } while (isSnakePosition(x, y) || isMeteorPosition(x, y));
+
+        food = Food(x, y);
+    }
+
     bool checkMeteorCollision()
     {
         Point head = snake.getBody().front();
@@ -199,6 +244,8 @@ public:
 
     void run()
     {
+        generateFood(); // Generate initial food
+
         while (true)
         {
             draw();
@@ -230,6 +277,11 @@ public:
             }
 
             snake.move();
+
+            if (snake.eatsFood(food.position))
+            {
+                generateFood(); // Generate new food
+            }
 
             // Check for collision with the border
             if (snake.checkCollision(width, height))
