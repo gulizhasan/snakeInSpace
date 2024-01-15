@@ -111,49 +111,41 @@ public:
         return false;
     }
 
-    void teleportSnake(const Point &newPosition)
+    void teleportSnakeHead(const Point &newPosition)
     {
-        Point tail = body.back();
-        int deltaX = newPosition.x - tail.x;
-        int deltaY = newPosition.y - tail.y;
-
-        // Shift the entire snake body to the new position
-        for (auto &segment : body)
-        {
-            segment.x += deltaX;
-            segment.y += deltaY;
-        }
+        // Move the head to the new position, the rest of the body will follow
+        body.insert(body.begin(), newPosition);
     }
 
     void move(Portal &portal1, Portal &portal2)
     {
-        Point head = body.front();
+        Point nextHead = body.front();
         if (dir == 'U')
-            --head.y;
+            --nextHead.y;
         else if (dir == 'D')
-            ++head.y;
+            ++nextHead.y;
         else if (dir == 'L')
-            --head.x;
+            --nextHead.x;
         else if (dir == 'R')
-            ++head.x;
+            ++nextHead.x;
 
         // Check if the snake's head is at a portal
-        if (portal1.isActive && head.x == portal1.position.x && head.y == portal1.position.y)
+        if (portal1.isActive && nextHead.x == portal1.position.x && nextHead.y == portal1.position.y)
         {
-            teleportSnake(portal2.position);
-            portal1.isActive = false; // Deactivate the portal after use
-            portal2.isActive = false; // Also deactivate the exit portal
+            teleportSnakeHead(portal2.position);
+            portal1.isActive = false; // Deactivate both portals
+            portal2.isActive = false;
         }
-        else if (portal2.isActive && head.x == portal2.position.x && head.y == portal2.position.y)
+        else if (portal2.isActive && nextHead.x == portal2.position.x && nextHead.y == portal2.position.y)
         {
-            teleportSnake(portal1.position);
-            portal1.isActive = false; // Also deactivate the exit portal
-            portal2.isActive = false; // Deactivate the portal after use
+            teleportSnakeHead(portal1.position);
+            portal1.isActive = false; // Deactivate both portals
+            portal2.isActive = false;
         }
         else
         {
-            body.insert(body.begin(), head);
-            body.pop_back();
+            body.insert(body.begin(), nextHead);
+            body.pop_back(); // Move normally if not teleporting
         }
     }
 
