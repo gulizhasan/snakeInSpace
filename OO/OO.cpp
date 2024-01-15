@@ -135,6 +135,7 @@ private:
     Snake snake;
     Food food;
     int width, height;
+    int score;
     vector<Meteor> meteors; // Store meteor positions
 
     // Function to get terminal size
@@ -167,17 +168,25 @@ private:
     {
         clearScreen();
 
+        std::string scoreStr = " Score: " + std::to_string(score) + " ";
+        int scoreStartPos = width - scoreStr.length() - 1; // Calculate where to start printing the score
+
         for (int y = 0; y < height; ++y)
         {
             for (int x = 0; x < width; ++x)
             {
-                if (y == 0 || y == height - 1 || x == 0 || x == width - 1)
+                // Check if we are at the top row where the score should be printed
+                if (y == 0 && x >= scoreStartPos && x < width - 1)
                 {
-                    cout << "X";
+                    cout << scoreStr[x - scoreStartPos];
+                }
+                else if (y == 0 || y == height - 1 || x == 0 || x == width - 1)
+                {
+                    cout << "X"; // Border
                 }
                 else if (isSnakePosition(x, y))
                 {
-                    cout << "O";
+                    cout << "O"; // Snake
                 }
                 else if (isMeteorPosition(x, y))
                 {
@@ -189,7 +198,7 @@ private:
                 }
                 else
                 {
-                    cout << " ";
+                    cout << " "; // Empty space
                 }
             }
             cout << endl;
@@ -248,7 +257,7 @@ private:
     }
 
 public:
-    Game(int width, int height) : width(width), height(height), snake()
+    Game(int width, int height) : width(width), height(height), snake(), score(0)
     {
         getTerminalSize();  // Get the terminal size
         snake = Snake(3);   // Initialize the snake
@@ -293,6 +302,7 @@ public:
 
             if (snake.eatsFood(food.position))
             {
+                score++;        // Increase the score
                 generateFood(); // Generate new food
             }
 
@@ -316,6 +326,8 @@ public:
                 cout << "Game Over - Meteor Collision!" << endl;
                 break; // Exit the game loop
             }
+
+            cout << "Score: " << score << endl; // Display the score after each draw
         }
     }
 
