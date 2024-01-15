@@ -50,6 +50,13 @@ public:
         }
     }
 
+    bool checkCollision(int width, int height)
+    {
+        Point head = body.front();
+        // Check if the head is at any border
+        return head.x <= 0 || head.x >= width - 1 || head.y <= 0 || head.y >= height - 1;
+    }
+
     void move()
     {
         Point head = body.front();
@@ -166,6 +173,12 @@ public:
                 }
             }
             snake.move();
+
+            if (snake.checkCollision(width, height))
+            {
+                cout << "Game Over!" << endl;
+                break; // Exit the game loop
+            }
         }
     }
 
