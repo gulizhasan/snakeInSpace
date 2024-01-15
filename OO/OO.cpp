@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <stdlib.h> // For random number generation
+#include <time.h>   // For seeding the random number generator
 
 using namespace std;
 
@@ -12,6 +14,14 @@ class Point
 public:
     int x, y;
     Point(int x, int y) : x(x), y(y) {}
+};
+
+class Meteor
+{
+public:
+    Point position;
+
+    Meteor(int x, int y) : position(x, y) {}
 };
 
 class Snake
@@ -84,6 +94,7 @@ class Game
 private:
     Snake snake;
     int width, height;
+    vector<Meteor> meteors; // Store meteor positions
 
     // Function to get terminal size
     void getTerminalSize()
@@ -99,6 +110,18 @@ private:
         system("clear");
     }
 
+    bool isMeteorPosition(int x, int y) const
+    {
+        for (const Meteor &meteor : meteors)
+        {
+            if (meteor.position.x == x && meteor.position.y == y)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void draw()
     {
         clearScreen();
@@ -109,15 +132,19 @@ private:
             {
                 if (y == 0 || y == height - 1 || x == 0 || x == width - 1)
                 {
-                    cout << "X"; // Border character
+                    cout << "X";
                 }
                 else if (isSnakePosition(x, y))
                 {
-                    cout << "*"; // Snake character
+                    cout << "O";
+                }
+                else if (isMeteorPosition(x, y))
+                {
+                    cout << "\033[31m*\033[0m"; // Red meteor
                 }
                 else
                 {
-                    cout << " "; // Empty space
+                    cout << " ";
                 }
             }
             cout << endl;
@@ -134,11 +161,40 @@ private:
         return false;
     }
 
+    void generateMeteors(int numMeteors)
+    {
+        srand(time(NULL)); // Seed the random number generator
+        while (meteors.size() < numMeteors)
+        {
+            int x = rand() % width;
+            int y = rand() % height;
+            // Ensure meteors do not spawn on the border or on the snake
+            if (!isSnakePosition(x, y) && x > 0 && x < width - 1 && y > 0 && y < height - 1)
+            {
+                meteors.push_back(Meteor(x, y));
+            }
+        }
+    }
+
+    bool checkMeteorCollision()
+    {
+        Point head = snake.getBody().front();
+        for (const Meteor &meteor : meteors)
+        {
+            if (meteor.position.x == head.x && meteor.position.y == head.y)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
 public:
     Game(int width, int height) : width(width), height(height), snake()
     {
-        getTerminalSize(); // Get the terminal size
-        snake = Snake(3);  // Initialize the snake
+        getTerminalSize();  // Get the terminal size
+        snake = Snake(3);   // Initialize the snake
+        generateMeteors(5); // Generate some meteors at the start of the game
     }
 
     void run()
@@ -172,11 +228,20 @@ public:
                     }
                 }
             }
+
             snake.move();
 
+            // Check for collision with the border
             if (snake.checkCollision(width, height))
             {
-                cout << "Game Over!" << endl;
+                cout << "Game Over - Border Collision!" << endl;
+                break; // Exit the game loop
+            }
+
+            // Check for collision with meteors
+            if (checkMeteorCollision())
+            {
+                cout << "Game Over - Meteor Collision!" << endl;
                 break; // Exit the game loop
             }
         }
