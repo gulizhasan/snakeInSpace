@@ -42,7 +42,7 @@ def snake_game(stdscr):
     w = curses.newwin(sh, sw, 0, 0)
     w.keypad(1)
 
-    initial_speed = 120  # Starting timeout value, set to a slower speed
+    initial_speed = 150  # Starting timeout value, set to a slower speed
     speed_increase_interval = 5  # Increase speed when score is a multiple of 5
     speed_increase_amount = 10  # Amount by which speed increases
     max_speed = 50  # Maximum speed limit
@@ -81,6 +81,8 @@ def snake_game(stdscr):
         w.addch(0, x, 'X')
         w.addch(sh - 1, x, 'X')
 
+    vertical_speed_adjustment = 2  # Slow down vertical movement
+
     while True:
         next_key = w.getch()
         key = key if next_key == -1 else next_key
@@ -89,12 +91,18 @@ def snake_game(stdscr):
 
         if key == curses.KEY_DOWN:
             new_head[0] += 1
+            # Slow down when moving down
+            w.timeout(current_speed * vertical_speed_adjustment)
         elif key == curses.KEY_UP:
             new_head[0] -= 1
+            # Slow down when moving up
+            w.timeout(current_speed * vertical_speed_adjustment)
         elif key == curses.KEY_LEFT:
             new_head[1] -= 1
+            w.timeout(current_speed)  # Normal speed when moving left
         elif key == curses.KEY_RIGHT:
             new_head[1] += 1
+            w.timeout(current_speed)  # Normal speed when moving right
 
         snake.insert(0, new_head)
 
@@ -136,7 +144,7 @@ def snake_game(stdscr):
 
         # Border collusion detection
         if (snake[0][0] == 0 or snake[0][0] == sh - 1 or
-            snake[0][1] == 0 or snake[0][1] == sw - 2):  # Updated to sw - 2
+                snake[0][1] == 0 or snake[0][1] == sw - 2):  # Updated to sw - 2
             break
 
         # Meteor collusion detection
@@ -152,6 +160,8 @@ def snake_game(stdscr):
         score_str = f"Score: {score}"
         w.addstr(0, sw - len(score_str) - 2, score_str)
 
+    # Reset speed to normal after each loop iteration
+    w.timeout(current_speed)
     w.clear()
     w.addstr(sh//2, sw//2 -
              len(f"Game Over! Score: {score}")//2, f"Game Over! Score: {score}")
