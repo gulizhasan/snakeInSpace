@@ -79,6 +79,19 @@ public:
         return head.x <= 0 || head.x >= width - 1 || head.y <= 0 || head.y >= height - 1;
     }
 
+    bool checkSelfCollision()
+    {
+        Point head = body.front();
+        for (size_t i = 1; i < body.size(); ++i)
+        {
+            if (head.x == body[i].x && head.y == body[i].y)
+            {
+                return true; // Collision detected
+            }
+        }
+        return false;
+    }
+
     void grow()
     {
         body.push_back(body.back()); // Add a new segment at the tail
@@ -287,6 +300,13 @@ public:
             if (snake.checkCollision(width, height))
             {
                 cout << "Game Over - Border Collision!" << endl;
+                break; // Exit the game loop
+            }
+
+            // Check for collision with self
+            if (snake.checkCollision(width, height) || snake.checkSelfCollision())
+            {
+                cout << "Game Over - Collision Detected!" << endl;
                 break; // Exit the game loop
             }
 
