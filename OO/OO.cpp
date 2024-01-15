@@ -135,6 +135,12 @@ public:
 
     void run()
     {
+        struct termios oldt, newt;
+        tcgetattr(STDIN_FILENO, &oldt); // Get current terminal settings
+        newt = oldt;
+        newt.c_lflag &= ~(ICANON | ECHO); // Turn off canonical mode and echoing
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
         while (true)
         {
             draw();
@@ -143,10 +149,10 @@ public:
             if (kbhit())
             {
                 char ch = getchar();
-                if (ch == 27) // Arrow keys start with an escape character
-                {
-                    getchar();      // Skip the '[' character
-                    ch = getchar(); // Get the direction character
+                if (ch == 27)
+                {                   // Escape character (start of arrow key sequence)
+                    getchar();      // Skip '[' character
+                    ch = getchar(); // Get the actual arrow key character
                     switch (ch)
                     {
                     case 'A':
@@ -166,6 +172,7 @@ public:
             }
             snake.move();
         }
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt); // Restore original terminal settings
     }
 
     bool kbhit()
