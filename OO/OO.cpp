@@ -167,6 +167,7 @@ private:
     Food food;
     int width, height;
     int score;
+    unsigned int sleepDuration;
     vector<Meteor> meteors; // Store meteor positions
     Portal portal1, portal2;
     time_t lastPortalGenerationTime;
@@ -358,7 +359,7 @@ private:
     }
 
 public:
-    Game(int width, int height) : width(width), height(height), snake(), score(0), lastPortalGenerationTime(time(NULL))
+    Game(int width, int height) : width(width), height(height), snake(), score(0), lastPortalGenerationTime(time(NULL)), sleepDuration(100000)
     {
         // Initialise game
         srand(20049623);    // Easter egg
@@ -409,6 +410,11 @@ public:
             {
                 score++;        // Increase the score
                 generateFood(); // Generate new food
+
+                if (score % 5 == 0)
+                {
+                    sleepDuration *= 0.8; // Reduce sleep duration by 20%
+                }
             }
 
             // Check for collision with the border
@@ -432,6 +438,7 @@ public:
                 break; // Exit the game loop
             }
 
+            usleep(sleepDuration);              // Use the sleepDuration variable
             cout << "Score: " << score << endl; // Display the score after each draw
         }
     }
