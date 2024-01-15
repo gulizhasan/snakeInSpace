@@ -87,6 +87,7 @@ def snake_game(stdscr):
         w.addch(sh - 1, x, 'X')
 
     vertical_speed_adjustment = 2  # Slow down vertical movement
+    easter_egg_triggered = False # Easter egg condition
 
     while True:
         next_key = w.getch()
@@ -143,6 +144,11 @@ def snake_game(stdscr):
             tail = snake.pop()
             w.addch(tail[0], tail[1], ' ')
 
+        # Check for Easter egg condition
+        if score == 10 and not easter_egg_triggered:
+            easter_egg_triggered = True
+            w.addstr(1, sw//2 - len("Easter Egg: 20049623")//2, "Easter Egg: 20049623", curses.color_pair(2))
+
         # Portal logic
         portal_used = False
         for portal in portals:
@@ -164,12 +170,12 @@ def snake_game(stdscr):
                 w.addch(portal[0], portal[1], 'O', curses.color_pair(2))
             last_portal_time = current_time
 
-        # Border collusion detection
+        # Border collision detection
         if (snake[0][0] == 0 or snake[0][0] == sh - 1 or
                 snake[0][1] == 0 or snake[0][1] == sw - 2):  # Updated to sw - 2
             break
 
-        # Meteor collusion detection
+        # Meteor collision detection
         if snake[0] in meteors:
             break
 
