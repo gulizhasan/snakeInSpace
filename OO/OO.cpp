@@ -84,7 +84,7 @@ private:
         struct winsize w;
         ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
         width = w.ws_col;
-        height = w.ws_row;
+        height = w.ws_row - 1; // Subtract one to make the game area one line smaller
     }
 
     void clearScreen()
@@ -95,21 +95,22 @@ private:
     void draw()
     {
         clearScreen();
+
         for (int y = 0; y < height; ++y)
         {
             for (int x = 0; x < width; ++x)
             {
                 if (y == 0 || y == height - 1 || x == 0 || x == width - 1)
                 {
-                    cout << "X"; // Changed from '#' to 'X'
+                    cout << "X"; // Border character
                 }
                 else if (isSnakePosition(x, y))
                 {
-                    cout << "*";
+                    cout << "*"; // Snake character
                 }
                 else
                 {
-                    cout << " ";
+                    cout << " "; // Empty space
                 }
             }
             cout << endl;
@@ -135,12 +136,6 @@ public:
 
     void run()
     {
-        struct termios oldt, newt;
-        tcgetattr(STDIN_FILENO, &oldt); // Get current terminal settings
-        newt = oldt;
-        newt.c_lflag &= ~(ICANON | ECHO); // Turn off canonical mode and echoing
-        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-
         while (true)
         {
             draw();
@@ -149,10 +144,10 @@ public:
             if (kbhit())
             {
                 char ch = getchar();
-                if (ch == 27)
-                {                   // Escape character (start of arrow key sequence)
-                    getchar();      // Skip '[' character
-                    ch = getchar(); // Get the actual arrow key character
+                if (ch == 27) // Arrow keys start with an escape character
+                {
+                    getchar();      // Skip the '[' character
+                    ch = getchar(); // Get the direction character
                     switch (ch)
                     {
                     case 'A':
@@ -172,7 +167,6 @@ public:
             }
             snake.move();
         }
-        tcsetattr(STDIN_FILENO, TCSANOW, &oldt); // Restore original terminal settings
     }
 
     bool kbhit()
