@@ -76,6 +76,7 @@ def snake_game(stdscr):
     last_portal_time = time.time()  # Initialise the variable to the current time
 
     key = curses.KEY_RIGHT
+    current_direction = 'right'  # Initialize the current direction
 
     # Draw borders using 'X' characters, adjusted to stay within window bounds
     for y in range(sh):
@@ -89,7 +90,20 @@ def snake_game(stdscr):
 
     while True:
         next_key = w.getch()
-        key = key if next_key == -1 else next_key
+        if next_key != -1:
+            if (next_key == curses.KEY_DOWN and current_direction != 'up') or \
+            (next_key == curses.KEY_UP and current_direction != 'down') or \
+            (next_key == curses.KEY_LEFT and current_direction != 'right') or \
+            (next_key == curses.KEY_RIGHT and current_direction != 'left'):
+                key = next_key
+                if key == curses.KEY_DOWN:
+                    current_direction = 'down'
+                elif key == curses.KEY_UP:
+                    current_direction = 'up'
+                elif key == curses.KEY_LEFT:
+                    current_direction = 'left'
+                elif key == curses.KEY_RIGHT:
+                    current_direction = 'right'
 
         new_head = [snake[0][0], snake[0][1]]
 
