@@ -108,6 +108,10 @@ def snake_game(stdscr):
             new_head[1] += 1
             w.timeout(current_speed)  # Normal speed when moving right
 
+        # Self-collision detection
+        if new_head in snake:
+            break
+
         snake.insert(0, new_head)
 
         if snake[0] == food:
