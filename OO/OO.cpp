@@ -20,7 +20,6 @@ class Meteor
 {
 public:
     Point position;
-
     Meteor(int x, int y) : position(x, y) {}
 };
 
@@ -28,12 +27,17 @@ class Food
 {
 public:
     Point position;
-
-    // Default constructor
     Food() : position(-1, -1) {}
-
-    // Constructor with parameters
     Food(int x, int y) : position(x, y) {}
+};
+
+class Portal
+{
+public:
+    Point position;
+    bool isActive;
+    Portal() : position(-1, -1), isActive(false) {}
+    Portal(int x, int y) : position(x, y), isActive(true) {}
 };
 
 class Snake
@@ -107,7 +111,21 @@ public:
         return false;
     }
 
-    void move()
+    void teleportSnake(const Point &newPosition)
+    {
+        Point tail = body.back();
+        int deltaX = newPosition.x - tail.x;
+        int deltaY = newPosition.y - tail.y;
+
+        // Shift the entire snake body to the new position
+        for (auto &segment : body)
+        {
+            segment.x += deltaX;
+            segment.y += deltaY;
+        }
+    }
+
+    void move(Portal &portal1, Portal &portal2)
     {
         Point head = body.front();
         if (dir == 'U')
@@ -119,8 +137,28 @@ public:
         else if (dir == 'R')
             ++head.x;
 
-        body.insert(body.begin(), head);
-        body.pop_back();
+        // Check if the snake's head is at a portal
+        if (portal1.isActive && head.x == portal1.position.x && head.y == portal1.position.y)
+        {
+            teleportSnake(portal2.position);
+            portal1
+                .isActive = false; // Deactivate the portal after use
+        }
+        else if (portal2.isActive && head.x == portal2.position.x && head.y == portal2.position.y)
+        {
+            teleportSnake(portal1.position);
+            portal2.isActive = false; // Deactivate the portal after use
+        }
+        else
+        {
+            body.insert(body.begin(), head);
+            body.pop_back();
+        }
+    }
+
+    bool isSnakeAtPosition(const Point &position) const
+    {
+        return body.front().x == position.x && body.front().y == position.y;
     }
 
     const vector<Point> &getBody() const
@@ -137,6 +175,34 @@ private:
     int width, height;
     int score;
     vector<Meteor> meteors; // Store meteor positions
+    Portal portal1, portal2;
+    time_t lastPortalGenerationTime;
+
+    void generatePortals()
+    {
+        portal1 = generatePortal();
+        portal2 = generatePortal();
+        lastPortalGenerationTime = time(NULL);
+    }
+
+    Portal generatePortal()
+    {
+        int x, y;
+        do
+        {
+            x = 1 + rand() % (width - 2);
+            y = 1 + rand() % (height - 2);
+        } while (isSnakePosition(x, y) || isMeteorPosition(x, y));
+        return Portal(x, y);
+    }
+
+    void checkAndRegeneratePortals()
+    {
+        if (difftime(time(NULL), lastPortalGenerationTime) >= 30)
+        {
+            generatePortals();
+        }
+    }
 
     // Function to get terminal size
     void getTerminalSize()
@@ -162,6 +228,12 @@ private:
             }
         }
         return false;
+    }
+
+    // Helper function to move the cursor to a specific position in the console
+    void gotoxy(int x, int y)
+    {
+        printf("\033[%d;%dH", y + 1, x + 1);
     }
 
     void draw()
@@ -196,6 +268,14 @@ private:
                 {
                     cout << "\u03C0"; // Pi symbol for food
                 }
+                else if (portal1.isActive && x == portal1.position.x && y == portal1.position.y)
+                {
+                    cout << "\033[34m@\033[0m"; // Blue portal 1
+                }
+                else if (portal2.isActive && x == portal2.position.x && y == portal2.position.y)
+                {
+                    cout << "\033[34m@\033[0m"; // Blue portal 2
+                }
                 else
                 {
                     cout << " "; // Empty space
@@ -205,7 +285,8 @@ private:
         }
     }
 
-    bool isSnakePosition(int x, int y) const
+    bool
+    isSnakePosition(int x, int y) const
     {
         for (const Point &p : snake.getBody())
         {
@@ -256,12 +337,42 @@ private:
         return false;
     }
 
-public:
-    Game(int width, int height) : width(width), height(height), snake(), score(0)
+    bool kbhit()
     {
+        termios oldt, newt;
+        int ch;
+        int oldf;
+
+        tcgetattr(STDIN_FILENO, &oldt);
+        newt = oldt;
+        newt.c_lflag &= ~(ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+        oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+        fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+        ch = getchar();
+
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+        fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+        if (ch != EOF)
+        {
+            ungetc(ch, stdin);
+            return true;
+        }
+
+        return false;
+    }
+
+public:
+    Game(int width, int height) : width(width), height(height), snake(), score(0), lastPortalGenerationTime(time(NULL))
+    {
+        // Initialise game
+        srand(20049623);    // Easter egg
         getTerminalSize();  // Get the terminal size
-        snake = Snake(3);   // Initialize the snake
+        snake = Snake(3);   // Initialise the snake
         generateMeteors(5); // Generate some meteors at the start of the game
+        generatePortals();  // Generate initial portals
     }
 
     void run()
@@ -273,7 +384,7 @@ public:
             draw();
             usleep(200000); // Slow down the game loop for visibility
 
-            if (kbhit())
+            if (kbhit()) // Input handling
             {
                 char ch = getchar();
                 if (ch == 27) // Arrow keys start with an escape character
@@ -298,7 +409,8 @@ public:
                 }
             }
 
-            snake.move();
+            snake.move(portal1, portal2); // Pass portals to the move function
+            checkAndRegeneratePortals(); // Check if it's time to regenerate portals
 
             if (snake.eatsFood(food.position))
             {
@@ -329,33 +441,6 @@ public:
 
             cout << "Score: " << score << endl; // Display the score after each draw
         }
-    }
-
-    bool kbhit()
-    {
-        termios oldt, newt;
-        int ch;
-        int oldf;
-
-        tcgetattr(STDIN_FILENO, &oldt);
-        newt = oldt;
-        newt.c_lflag &= ~(ICANON | ECHO);
-        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-        oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-        fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-
-        ch = getchar();
-
-        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-        fcntl(STDIN_FILENO, F_SETFL, oldf);
-
-        if (ch != EOF)
-        {
-            ungetc(ch, stdin);
-            return true;
-        }
-
-        return false;
     }
 };
 
