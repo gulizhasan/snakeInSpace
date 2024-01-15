@@ -63,13 +63,17 @@ def snake_game(stdscr):
 
     meteors = create_meteors(snake, food, w, sh, sw)
 
+    # Initialise portal regeneration timer to the start of the game
+    last_portal_time = time.time()
+
+    # Generate the initial pair of portals
     portals = create_portals(snake, food, meteors, w, sh, sw)
     for portal in portals:
         w.addch(portal[0], portal[1], 'O', curses.color_pair(2))
 
     # Variables to track last portal used and time since last portal use
     last_portal_used_time = 0
-    last_portal_time = time.time()  # Initialize the variable to the current time
+    last_portal_time = time.time()  # Initialise the variable to the current time
 
     key = curses.KEY_RIGHT
 
@@ -131,9 +135,9 @@ def snake_game(stdscr):
                 portal_used = True
                 break
 
-        # Regenerate portals every 30 seconds
+        # Regenerate portals every 30 seconds and only if there's one pair on screen
         current_time = time.time()
-        if current_time - last_portal_time >= 30 or portal_used:
+        if current_time - last_portal_time >= 30:
             # Clear old portals and generate new ones
             for portal in portals:
                 w.addch(portal[0], portal[1], ' ')
