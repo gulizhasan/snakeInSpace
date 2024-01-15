@@ -92,9 +92,9 @@ def snake_game(stdscr):
         next_key = w.getch()
         if next_key != -1:
             if (next_key == curses.KEY_DOWN and current_direction != 'up') or \
-            (next_key == curses.KEY_UP and current_direction != 'down') or \
-            (next_key == curses.KEY_LEFT and current_direction != 'right') or \
-            (next_key == curses.KEY_RIGHT and current_direction != 'left'):
+                (next_key == curses.KEY_UP and current_direction != 'down') or \
+                (next_key == curses.KEY_LEFT and current_direction != 'right') or \
+                    (next_key == curses.KEY_RIGHT and current_direction != 'left'):
                 key = next_key
                 if key == curses.KEY_DOWN:
                     current_direction = 'down'
@@ -182,13 +182,17 @@ def snake_game(stdscr):
         score_str = f"Score: {score}"
         w.addstr(0, sw - len(score_str) - 2, score_str)
 
+    # Game Over logic
+    w.clear()
+    game_over_msg = f"Game Over! Score: {score}"
+    w.addstr(sh//2, sw//2 - len(game_over_msg)//2, game_over_msg)
+    w.refresh()
+    time.sleep(2)  # Pause for 2 seconds on the Game Over screen
+
     # Reset speed to normal after each loop iteration
     w.timeout(current_speed)
     w.clear()
-    w.addstr(sh//2, sw//2 -
-             len(f"Game Over! Score: {score}")//2, f"Game Over! Score: {score}")
     w.refresh()
-    w.getch()
 
 
 def main():
