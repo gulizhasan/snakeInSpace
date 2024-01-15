@@ -141,12 +141,13 @@ public:
         if (portal1.isActive && head.x == portal1.position.x && head.y == portal1.position.y)
         {
             teleportSnake(portal2.position);
-            portal1
-                .isActive = false; // Deactivate the portal after use
+            portal1.isActive = false; // Deactivate the portal after use
+            portal2.isActive = false; // Also deactivate the exit portal
         }
         else if (portal2.isActive && head.x == portal2.position.x && head.y == portal2.position.y)
         {
             teleportSnake(portal1.position);
+            portal1.isActive = false; // Also deactivate the exit portal
             portal2.isActive = false; // Deactivate the portal after use
         }
         else
@@ -409,7 +410,7 @@ public:
                 }
             }
 
-            snake.move(portal1, portal2); // Pass portals to the move function
+            snake.move(portal1, portal2);
             checkAndRegeneratePortals(); // Check if it's time to regenerate portals
 
             if (snake.eatsFood(food.position))
