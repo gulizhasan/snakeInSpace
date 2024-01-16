@@ -1,20 +1,21 @@
+// Import necessary modules from crossterm and other standard libraries
 use crossterm::{
     event::{self, KeyCode, KeyEvent},
     execute,
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use std::io::{self, Write};
+use std::io::{self};
 use std::{error::Error, thread, time::Duration};
 use tui::layout::Rect;
 use tui::{
     backend::CrosstermBackend,
-    layout::{Constraint, Direction as TuiDirection, Layout},
     style::{Color, Style},
     text::{Span, Spans},
-    widgets::{Block, Borders, Paragraph},
+    widgets::Paragraph,
     Terminal,
 };
 
+// Enumeration to represent the snake's direction
 #[derive(Clone, Copy)]
 enum Direction {
     Up,
@@ -23,12 +24,14 @@ enum Direction {
     Right,
 }
 
+// A struct representing a point (or segment) in 2D space
 #[derive(Clone, Copy, PartialEq, Debug)]
 struct Point {
     x: i32,
     y: i32,
 }
 
+// Struct to represent the snake
 #[derive(Clone)]
 struct Snake {
     body: Vec<Point>,
@@ -48,6 +51,7 @@ impl Snake {
         }
     }
 
+    // Moves the snake in the current direction by adding a new head and removing the tail
     fn move_forward(&mut self) {
         let head = self.body[0];
         let new_head = match self.direction {
@@ -69,19 +73,20 @@ impl Snake {
             },
         };
 
-        // Check if the new head is out of bounds before moving.
+        // Check if the new head is out of bounds before moving
         if new_head.x >= 1 && new_head.y >= 1 {
             // Adjust the bounds to start from 1
             self.body.insert(0, new_head);
             // Remove the last segment of the snake's body to simulate movement
             self.body.pop();
         } else {
-            // Handle collision with the wall or boundary here.
-            // For now, let's just exit the game.
+            // Handle collision with the wall or boundary here
+            // For now, just exit the game
             return;
         }
     }
 
+    // Changes the snake's direction unless it's directly opposite to current direction
     fn change_direction(&mut self, new_direction: Direction) {
         if !(matches!(
             (self.direction, new_direction),
@@ -95,6 +100,7 @@ impl Snake {
     }
 }
 
+// Main function where execution starts
 fn main() -> Result<(), Box<dyn Error>> {
     let mut stdout = io::stdout();
 
@@ -103,9 +109,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         execute!(stdout, _enter)?;
     }
 
+    // Enable raw mode for the terminal
     terminal::enable_raw_mode()?;
 
+    // Create a backend for the TUI using Crossterm
     let backend = CrosstermBackend::new(stdout);
+    // Create a TUI terminal
     let mut terminal = Terminal::new(backend)?;
 
     let mut snake = Snake::new();
@@ -120,6 +129,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }) = event::read()?
             {
                 match code {
+                    // Handle arrow keys and 'q' key to change direction or quit
                     KeyCode::Up => snake.change_direction(Direction::Up),
                     KeyCode::Down => snake.change_direction(Direction::Down),
                     KeyCode::Left => snake.change_direction(Direction::Left),
@@ -132,18 +142,16 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         snake.move_forward();
 
-        terminal.draw(|mut f| {
-            let chunks = Layout::default()
-                .direction(TuiDirection::Vertical)
-                .constraints([Constraint::Percentage(100)].as_ref())
-                .split(f.size());
+        terminal.draw(|f| {
+            let size = f.size();
 
-            for y in 0..f.size().height {
-                for x in 0..f.size().width {
-                    let rect = Rect::new(x as u16, y as u16, 1, 1);
-                    if x == 0 || x == f.size().width - 1 || y == 0 || y == f.size().height - 1 {
-                        // Use 'X' instead of the default border characters
-                        f.render_widget(Block::default().borders(Borders::ALL).title("X"), rect);
+            // Render the borders with 'X'
+            for y in 0..size.height {
+                for x in 0..size.width {
+                    if x == 0 || x == size.width - 1 || y == 0 || y == size.height - 1 {
+                        let rect = Rect::new(x, y, 1, 1);
+                        let border_char = Paragraph::new(Spans::from(Span::raw("X")));
+                        f.render_widget(border_char, rect);
                     }
                 }
             }
@@ -151,7 +159,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             // Render the snake after drawing the borders
             for p in &snake.body {
                 let rect = Rect::new((p.x + 1) as u16, (p.y + 1) as u16, 1, 1);
-                // Render each segment of the snake with a visible style
                 let snake_segment = Paragraph::new(Spans::from(Span::styled(
                     "O",
                     Style::default().fg(Color::White),
@@ -160,9 +167,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         })?;
 
+        // Delay to control the speed of the game
         thread::sleep(Duration::from_millis(200));
     }
 
+    // Disable raw mode and leave the alternate screen
     terminal::disable_raw_mode()?;
 
     {
