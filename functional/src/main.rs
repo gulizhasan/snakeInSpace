@@ -62,7 +62,7 @@ struct Portal {
 impl Snake {
     fn new() -> Snake {
         Snake {
-            // Initialize the snake with three segments
+            // Initialise the snake with three segments
             body: vec![
                 Point { x: 5, y: 5 },
                 Point { x: 4, y: 5 },
@@ -82,10 +82,22 @@ impl Snake {
     ) -> (bool, bool) {
         let head = self.body[0];
         let mut new_head = match self.direction {
-            Direction::Up => Point { x: head.x, y: head.y - 1 },
-            Direction::Down => Point { x: head.x, y: head.y + 1 },
-            Direction::Left => Point { x: head.x - 1, y: head.y },
-            Direction::Right => Point { x: head.x + 1, y: head.y },
+            Direction::Up => Point {
+                x: head.x,
+                y: head.y - 1,
+            },
+            Direction::Down => Point {
+                x: head.x,
+                y: head.y + 1,
+            },
+            Direction::Left => Point {
+                x: head.x - 1,
+                y: head.y,
+            },
+            Direction::Right => Point {
+                x: head.x + 1,
+                y: head.y,
+            },
         };
 
         // Check for collision with meteors
@@ -95,7 +107,11 @@ impl Snake {
 
         // Portal teleportation logic
         if portal.active && (new_head == portal.entry || new_head == portal.exit) {
-            new_head = if new_head == portal.entry { portal.exit } else { portal.entry };
+            new_head = if new_head == portal.entry {
+                portal.exit
+            } else {
+                portal.entry
+            };
             portal.active = false; // Deactivate the portal after use
         }
 
@@ -247,6 +263,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut portal = Portal::new(terminal_dimensions, &snake);
     let mut last_portal_time = std::time::Instant::now();
 
+    // Initialise score
+    let mut score = 0;
+
     'game_loop: loop {
         if event::poll(Duration::from_millis(100))? {
             if let event::Event::Key(KeyEvent {
@@ -278,6 +297,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         if ate_food {
             food = Food::new(&snake, terminal_dimensions); // Reposition food if eaten
+            score += 1; // Increment score when food is eaten
         }
 
         terminal.draw(|f| {
@@ -357,6 +377,20 @@ fn main() -> Result<(), Box<dyn Error>> {
                 portal = Portal::new(terminal_dimensions, &snake);
                 last_portal_time = std::time::Instant::now();
             }
+
+            // Render the score
+            let score_text = format!("Score: {}", score);
+            let score_rect = Rect::new(
+                size.width - score_text.len() as u16 - 2,
+                0,
+                score_text.len() as u16,
+                1,
+            );
+            let score_paragraph = Paragraph::new(Spans::from(Span::styled(
+                score_text,
+                Style::default().fg(Color::White),
+            )));
+            f.render_widget(score_paragraph, score_rect);
         })?;
 
         // Delay to control the speed of the game
