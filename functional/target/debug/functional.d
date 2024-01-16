@@ -1,0 +1,1 @@
+/Users/gulizbitirim/Library/CloudStorage/OneDrive-MMU/Desktop/uni/year4/programmingLanguagesAndParadigms/assignment/functional/target/debug/functional: /Users/gulizbitirim/Library/CloudStorage/OneDrive-MMU/Desktop/uni/year4/programmingLanguagesAndParadigms/assignment/functional/src/main.rs

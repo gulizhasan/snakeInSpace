@@ -1,0 +1,7 @@
+/Users/gulizbitirim/Library/CloudStorage/OneDrive-MMU/Desktop/uni/year4/programmingLanguagesAndParadigms/assignment/functional/target/debug/deps/libsignal_hook_mio-5eee5231e5cb83e2.rmeta: /Users/gulizbitirim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/signal-hook-mio-0.2.3/src/lib.rs
+
+/Users/gulizbitirim/Library/CloudStorage/OneDrive-MMU/Desktop/uni/year4/programmingLanguagesAndParadigms/assignment/functional/target/debug/deps/libsignal_hook_mio-5eee5231e5cb83e2.rlib: /Users/gulizbitirim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/signal-hook-mio-0.2.3/src/lib.rs
+
+/Users/gulizbitirim/Library/CloudStorage/OneDrive-MMU/Desktop/uni/year4/programmingLanguagesAndParadigms/assignment/functional/target/debug/deps/signal_hook_mio-5eee5231e5cb83e2.d: /Users/gulizbitirim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/signal-hook-mio-0.2.3/src/lib.rs
+
+/Users/gulizbitirim/.cargo/registry/src/index.crates.io-6f17d22bba15001f/signal-hook-mio-0.2.3/src/lib.rs:
