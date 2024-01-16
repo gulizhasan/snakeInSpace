@@ -45,6 +45,12 @@ struct Food {
     position: Point,
 }
 
+// Struct to represent the meteors
+#[derive(Clone, Copy, PartialEq, Debug)]
+struct Meteor {
+    position: Point,
+}
+
 impl Snake {
     fn new() -> Snake {
         Snake {
@@ -59,7 +65,12 @@ impl Snake {
     }
 
     // Moves the snake in the current direction by adding a new head and removing the tail
-    fn move_forward(&mut self, terminal_size: (u16, u16), food_position: Point) -> (bool, bool) {
+    fn move_forward(
+        &mut self,
+        terminal_size: (u16, u16),
+        food_position: Point,
+        meteors: &[Meteor],
+    ) -> (bool, bool) {
         let head = self.body[0];
         let new_head = match self.direction {
             Direction::Up => Point {
@@ -79,6 +90,11 @@ impl Snake {
                 y: head.y,
             },
         };
+
+        // Check for collision with meteors
+        if meteors.iter().any(|m| m.position == new_head) {
+            return (false, false); // Collision with a meteor
+        }
 
         // Check if the new head is within the terminal bounds
         if new_head.x >= 0
@@ -135,6 +151,31 @@ impl Food {
     }
 }
 
+impl Meteor {
+    // Function to generate a new meteor at a random position, avoiding the borders and snake
+    fn new(terminal_size: (u16, u16), snake: &Snake) -> Meteor {
+        let mut rng = thread_rng();
+        let (width, height) = terminal_size;
+        let mut new_position;
+
+        loop {
+            // Generate positions away from the borders (1 unit inside the actual game area)
+            new_position = Point {
+                x: rng.gen_range(2..width as i32 - 2), // Adjusted range to avoid borders
+                y: rng.gen_range(2..height as i32 - 2), // Adjusted range to avoid borders
+            };
+            // Ensure the meteor doesn't spawn on the snake
+            if !snake.body.contains(&new_position) {
+                break;
+            }
+        }
+
+        Meteor {
+            position: new_position,
+        }
+    }
+}
+
 // Main function where execution starts
 fn main() -> Result<(), Box<dyn Error>> {
     let mut stdout = io::stdout();
@@ -160,6 +201,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut snake = Snake::new();
     let mut food = Food::new(&snake, terminal_dimensions);
 
+    // Generate a list of static meteors
+    let mut meteors = Vec::new();
+    for _ in 0..5 {
+        // Adjust the number of meteors as needed
+        meteors.push(Meteor::new(terminal_dimensions, &snake));
+    }
+
     'game_loop: loop {
         if event::poll(Duration::from_millis(100))? {
             if let event::Event::Key(KeyEvent {
@@ -182,15 +230,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         // Obtain the terminal size
-        let terminal_size = terminal.size()?;
+        // let terminal_size = terminal.size()?;
 
-        let (snake_moved, ate_food) = snake.move_forward(terminal_dimensions, food.position);
-
-        // Update the snake's movement with border collision detection
-        // let snake_moved = snake.move_forward((terminal_size.width, terminal_size.height));
+        let (snake_moved, ate_food) =
+            snake.move_forward(terminal_dimensions, food.position, &meteors);
 
         if !snake_moved {
-            // Handle game over due to snake collision with border
+            // Handle game over due to collision with meteors or border
             break 'game_loop;
         }
 
@@ -230,10 +276,25 @@ fn main() -> Result<(), Box<dyn Error>> {
                 1,
             );
             let food_widget = Paragraph::new(Spans::from(Span::styled(
-                "\u{03c0}",                                 // Pi symbol as food character
+                "\u{03c0}",                        // Pi symbol as food character
                 Style::default().fg(Color::White), // Food color
             )));
             f.render_widget(food_widget, food_rect);
+
+            // Render each meteor
+            for meteor in &meteors {
+                let meteor_rect = Rect::new(
+                    (meteor.position.x + 1) as u16,
+                    (meteor.position.y + 1) as u16,
+                    1,
+                    1,
+                );
+                let meteor_widget = Paragraph::new(Spans::from(Span::styled(
+                    "*",                             // Meteor character
+                    Style::default().fg(Color::Red), // Meteor color
+                )));
+                f.render_widget(meteor_widget, meteor_rect);
+            }
         })?;
 
         // Delay to control the speed of the game
