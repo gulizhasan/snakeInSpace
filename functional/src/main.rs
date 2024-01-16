@@ -4,6 +4,7 @@ use crossterm::{
     execute,
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use rand::{thread_rng, Rng};
 use std::io::{self};
 use std::{error::Error, thread, time::Duration};
 use tui::layout::Rect;
@@ -38,6 +39,12 @@ struct Snake {
     direction: Direction,
 }
 
+// Struct to represent the food
+#[derive(Clone, Copy, PartialEq, Debug)]
+struct Food {
+    position: Point,
+}
+
 impl Snake {
     fn new() -> Snake {
         Snake {
@@ -52,7 +59,7 @@ impl Snake {
     }
 
     // Moves the snake in the current direction by adding a new head and removing the tail
-    fn move_forward(&mut self, terminal_size: (u16, u16)) -> bool {
+    fn move_forward(&mut self, terminal_size: (u16, u16), food_position: Point) -> (bool, bool) {
         let head = self.body[0];
         let new_head = match self.direction {
             Direction::Up => Point {
@@ -74,19 +81,21 @@ impl Snake {
         };
 
         // Check if the new head is within the terminal bounds
-        let (width, height) = terminal_size;
         if new_head.x >= 0
             && new_head.y >= 0
-            && new_head.x < width as i32 - 2
-            && new_head.y < height as i32 - 2
+            && new_head.x < terminal_size.0 as i32 - 2
+            && new_head.y < terminal_size.1 as i32 - 2
         {
-            // The new head is within bounds, update the snake's position
+            let ate_food = new_head == food_position; // Check if snake ate the food
             self.body.insert(0, new_head);
-            self.body.pop(); // Remove the last segment to simulate movement
-            true // Indicates the snake moved successfully
+
+            if !ate_food {
+                self.body.pop(); // Remove the last segment if food is not eaten
+            }
+
+            (true, ate_food) // Return true for successful movement, and whether food was eaten
         } else {
-            // The new head is out of bounds, indicating a collision with the border
-            false // Return false to indicate game over due to border collision
+            (false, false) // Return false for collision with wall, and false for food not eaten
         }
     }
 
@@ -100,6 +109,28 @@ impl Snake {
                 | (Direction::Right, Direction::Left)
         )) {
             self.direction = new_direction;
+        }
+    }
+}
+
+impl Food {
+    fn new(snake: &Snake, terminal_size: (u16, u16)) -> Food {
+        let mut rng = thread_rng();
+        let (width, height) = terminal_size;
+        let mut new_position;
+
+        loop {
+            new_position = Point {
+                x: rng.gen_range(1..width as i32 - 1),
+                y: rng.gen_range(1..height as i32 - 1),
+            };
+            if !snake.body.contains(&new_position) {
+                break;
+            }
+        }
+
+        Food {
+            position: new_position,
         }
     }
 }
@@ -121,7 +152,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Create a TUI terminal
     let mut terminal = Terminal::new(backend)?;
 
+    // Get terminal size and extract width and height
+    let terminal_size = terminal.size()?;
+    let terminal_dimensions = (terminal_size.width, terminal_size.height);
+
+    // Define snake before using it to create food
     let mut snake = Snake::new();
+    let mut food = Food::new(&snake, terminal_dimensions);
 
     'game_loop: loop {
         if event::poll(Duration::from_millis(100))? {
@@ -147,12 +184,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Obtain the terminal size
         let terminal_size = terminal.size()?;
 
+        let (snake_moved, ate_food) = snake.move_forward(terminal_dimensions, food.position);
+
         // Update the snake's movement with border collision detection
-        let snake_moved = snake.move_forward((terminal_size.width, terminal_size.height));
+        // let snake_moved = snake.move_forward((terminal_size.width, terminal_size.height));
 
         if !snake_moved {
             // Handle game over due to snake collision with border
             break 'game_loop;
+        }
+
+        if ate_food {
+            food = Food::new(&snake, terminal_dimensions); // Reposition food if eaten
         }
 
         terminal.draw(|f| {
@@ -178,6 +221,19 @@ fn main() -> Result<(), Box<dyn Error>> {
                 )));
                 f.render_widget(snake_segment, rect);
             }
+
+            // Render the food
+            let food_rect = Rect::new(
+                (food.position.x + 1) as u16,
+                (food.position.y + 1) as u16,
+                1,
+                1,
+            );
+            let food_widget = Paragraph::new(Spans::from(Span::styled(
+                "\u{03c0}",                                 // Pi symbol as food character
+                Style::default().fg(Color::White), // Food color
+            )));
+            f.render_widget(food_widget, food_rect);
         })?;
 
         // Delay to control the speed of the game
