@@ -52,7 +52,7 @@ impl Snake {
     }
 
     // Moves the snake in the current direction by adding a new head and removing the tail
-    fn move_forward(&mut self) {
+    fn move_forward(&mut self, terminal_size: (u16, u16)) -> bool {
         let head = self.body[0];
         let new_head = match self.direction {
             Direction::Up => Point {
@@ -73,16 +73,20 @@ impl Snake {
             },
         };
 
-        // Check if the new head is out of bounds before moving
-        if new_head.x >= 1 && new_head.y >= 1 {
-            // Adjust the bounds to start from 1
+        // Check if the new head is within the terminal bounds
+        let (width, height) = terminal_size;
+        if new_head.x >= 0
+            && new_head.y >= 0
+            && new_head.x < width as i32 - 2
+            && new_head.y < height as i32 - 2
+        {
+            // The new head is within bounds, update the snake's position
             self.body.insert(0, new_head);
-            // Remove the last segment of the snake's body to simulate movement
-            self.body.pop();
+            self.body.pop(); // Remove the last segment to simulate movement
+            true // Indicates the snake moved successfully
         } else {
-            // Handle collision with the wall or boundary here
-            // For now, just exit the game
-            return;
+            // The new head is out of bounds, indicating a collision with the border
+            false // Return false to indicate game over due to border collision
         }
     }
 
@@ -140,7 +144,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        snake.move_forward();
+        // Obtain the terminal size
+        let terminal_size = terminal.size()?;
+
+        // Update the snake's movement with border collision detection
+        let snake_moved = snake.move_forward((terminal_size.width, terminal_size.height));
+
+        if !snake_moved {
+            // Handle game over due to snake collision with border
+            break 'game_loop;
+        }
 
         terminal.draw(|f| {
             let size = f.size();
