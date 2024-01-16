@@ -51,6 +51,14 @@ struct Meteor {
     position: Point,
 }
 
+// Struct to represent the portals
+#[derive(Clone, Copy, PartialEq, Debug)]
+struct Portal {
+    entry: Point,
+    exit: Point,
+    active: bool,
+}
+
 impl Snake {
     fn new() -> Snake {
         Snake {
@@ -70,30 +78,25 @@ impl Snake {
         terminal_size: (u16, u16),
         food_position: Point,
         meteors: &[Meteor],
+        portal: &mut Portal,
     ) -> (bool, bool) {
         let head = self.body[0];
-        let new_head = match self.direction {
-            Direction::Up => Point {
-                x: head.x,
-                y: head.y - 1,
-            },
-            Direction::Down => Point {
-                x: head.x,
-                y: head.y + 1,
-            },
-            Direction::Left => Point {
-                x: head.x - 1,
-                y: head.y,
-            },
-            Direction::Right => Point {
-                x: head.x + 1,
-                y: head.y,
-            },
+        let mut new_head = match self.direction {
+            Direction::Up => Point { x: head.x, y: head.y - 1 },
+            Direction::Down => Point { x: head.x, y: head.y + 1 },
+            Direction::Left => Point { x: head.x - 1, y: head.y },
+            Direction::Right => Point { x: head.x + 1, y: head.y },
         };
 
         // Check for collision with meteors
         if meteors.iter().any(|m| m.position == new_head) {
             return (false, false); // Collision with a meteor
+        }
+
+        // Portal teleportation logic
+        if portal.active && (new_head == portal.entry || new_head == portal.exit) {
+            new_head = if new_head == portal.entry { portal.exit } else { portal.entry };
+            portal.active = false; // Deactivate the portal after use
         }
 
         // Check if the new head is within the terminal bounds
@@ -176,7 +179,39 @@ impl Meteor {
     }
 }
 
-// Main function where execution starts
+impl Portal {
+    // Function to generate a new pair of portals
+    fn new(terminal_size: (u16, u16), snake: &Snake) -> Portal {
+        let mut rng = thread_rng();
+        let (width, height) = terminal_size;
+        let mut entry_position;
+        let mut exit_position;
+
+        loop {
+            entry_position = Point {
+                x: rng.gen_range(1..width as i32 - 1),
+                y: rng.gen_range(1..height as i32 - 1),
+            };
+            exit_position = Point {
+                x: rng.gen_range(1..width as i32 - 1),
+                y: rng.gen_range(1..height as i32 - 1),
+            };
+            if !snake.body.contains(&entry_position)
+                && !snake.body.contains(&exit_position)
+                && entry_position != exit_position
+            {
+                break;
+            }
+        }
+
+        Portal {
+            entry: entry_position,
+            exit: exit_position,
+            active: true,
+        }
+    }
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let mut stdout = io::stdout();
 
@@ -208,6 +243,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         meteors.push(Meteor::new(terminal_dimensions, &snake));
     }
 
+    // Initial portal generation
+    let mut portal = Portal::new(terminal_dimensions, &snake);
+    let mut last_portal_time = std::time::Instant::now();
+
     'game_loop: loop {
         if event::poll(Duration::from_millis(100))? {
             if let event::Event::Key(KeyEvent {
@@ -229,11 +268,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        // Obtain the terminal size
-        // let terminal_size = terminal.size()?;
-
         let (snake_moved, ate_food) =
-            snake.move_forward(terminal_dimensions, food.position, &meteors);
+            snake.move_forward(terminal_dimensions, food.position, &meteors, &mut portal);
 
         if !snake_moved {
             // Handle game over due to collision with meteors or border
@@ -294,6 +330,32 @@ fn main() -> Result<(), Box<dyn Error>> {
                     Style::default().fg(Color::Red), // Meteor color
                 )));
                 f.render_widget(meteor_widget, meteor_rect);
+            }
+
+            // Render portals if active
+            if portal.active {
+                let entry_rect = Rect::new(
+                    (portal.entry.x + 1) as u16,
+                    (portal.entry.y + 1) as u16,
+                    1,
+                    1,
+                );
+                let exit_rect =
+                    Rect::new((portal.exit.x + 1) as u16, (portal.exit.y + 1) as u16, 1, 1);
+
+                let portal_widget = Paragraph::new(Spans::from(Span::styled(
+                    "@",
+                    Style::default().fg(Color::Blue),
+                )));
+
+                f.render_widget(portal_widget.clone(), entry_rect); // Clone for entry
+                f.render_widget(portal_widget, exit_rect); // Use original for exit
+            }
+
+            // Portal generation logic
+            if !portal.active && last_portal_time.elapsed() > Duration::from_secs(30) {
+                portal = Portal::new(terminal_dimensions, &snake);
+                last_portal_time = std::time::Instant::now();
             }
         })?;
 
