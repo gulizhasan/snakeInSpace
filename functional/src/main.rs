@@ -267,6 +267,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Initialise score
     let mut score = 0;
 
+    // Add a speed level variable
+    let mut speed_level = 1;
+
     'game_loop: loop {
         if event::poll(Duration::from_millis(100))? {
             if let event::Event::Key(KeyEvent {
@@ -299,7 +302,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         if ate_food {
             food = Food::new(&snake, terminal_dimensions); // Reposition food if eaten
             score += 1; // Increment score when food is eaten
+    
+            // Check if the score is a multiple of 5 to increase speed every 5 points
+            if score % 5 == 0 {
+                speed_level += 1;
+            }
         }
+    
+        // Calculate sleep duration based on speed level
+        let sleep_duration = Duration::from_millis(150 - (speed_level * 20));
 
         terminal.draw(|f| {
             let size = f.size();
@@ -395,7 +406,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         })?;
 
         // Delay to control the speed of the game
-        thread::sleep(Duration::from_millis(200));
+        thread::sleep(sleep_duration);
     }
 
     // Disable raw mode and leave the alternate screen
