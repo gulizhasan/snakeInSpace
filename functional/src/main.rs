@@ -100,6 +100,11 @@ impl Snake {
             },
         };
 
+        // Check for self-collision
+        if self.body.contains(&new_head) {
+            return (false, false); // Collision with itself
+        }
+
         // Check for collision with meteors
         if meteors.iter().any(|m| m.position == new_head) {
             return (false, false); // Collision with a meteor
