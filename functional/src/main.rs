@@ -155,10 +155,10 @@ impl Food {
         let mut new_position;
 
         loop {
-            // Generate positions within the inner area, leaving 1 unit from the borders
             new_position = Point {
-                x: rng.gen_range(1..width as i32 - 1),
-                y: rng.gen_range(1..height as i32 - 1),
+                // Adjust range to exclude the border
+                x: rng.gen_range(2..width as i32 - 2),
+                y: rng.gen_range(2..height as i32 - 2),
             };
             if !snake.body.contains(&new_position) {
                 break;
@@ -167,6 +167,37 @@ impl Food {
 
         Food {
             position: new_position,
+        }
+    }
+}
+
+impl Portal {
+    fn new(terminal_size: (u16, u16), snake: &Snake) -> Portal {
+        let mut rng = thread_rng();
+        let (width, height) = terminal_size;
+        let mut entry_position;
+        let mut exit_position;
+
+        loop {
+            entry_position = Point {
+                x: rng.gen_range(2..width as i32 - 2),
+                y: rng.gen_range(2..height as i32 - 2),
+            };
+            exit_position = Point {
+                x: rng.gen_range(2..width as i32 - 2),
+                y: rng.gen_range(2..height as i32 - 2),
+            };
+            if !snake.body.contains(&entry_position)
+                && !snake.body.contains(&exit_position)
+                && entry_position != exit_position {
+                break;
+            }
+        }
+
+        Portal {
+            entry: entry_position,
+            exit: exit_position,
+            active: true,
         }
     }
 }
@@ -192,39 +223,6 @@ impl Meteor {
 
         Meteor {
             position: new_position,
-        }
-    }
-}
-
-impl Portal {
-    // Function to generate a new pair of portals
-    fn new(terminal_size: (u16, u16), snake: &Snake) -> Portal {
-        let mut rng = thread_rng();
-        let (width, height) = terminal_size;
-        let mut entry_position;
-        let mut exit_position;
-
-        loop {
-            entry_position = Point {
-                x: rng.gen_range(2..width as i32 - 2),
-                y: rng.gen_range(2..height as i32 - 2),
-            };
-            exit_position = Point {
-                x: rng.gen_range(2..width as i32 - 2),
-                y: rng.gen_range(2..height as i32 - 2),
-            };
-            if !snake.body.contains(&entry_position)
-                && !snake.body.contains(&exit_position)
-                && entry_position != exit_position
-            {
-                break;
-            }
-        }
-
-        Portal {
-            entry: entry_position,
-            exit: exit_position,
-            active: true,
         }
     }
 }
@@ -259,6 +257,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Adjust the number of meteors as needed
         meteors.push(Meteor::new(terminal_dimensions, &snake));
     }
+
+    // Define constants for horizontal and vertical delays
+    const HORIZONTAL_DELAY: u64 = 150; // Milliseconds
+    const VERTICAL_DELAY: u64 = 200; // Adjust this value as needed
+    const MINIMUM_DELAY: u64 = 50; // Milliseconds
 
     // Initial portal generation
     let mut portal = Portal::new(terminal_dimensions, &snake);
@@ -302,15 +305,24 @@ fn main() -> Result<(), Box<dyn Error>> {
         if ate_food {
             food = Food::new(&snake, terminal_dimensions); // Reposition food if eaten
             score += 1; // Increment score when food is eaten
-    
+
             // Check if the score is a multiple of 5 to increase speed every 5 points
             if score % 5 == 0 {
                 speed_level += 1;
             }
         }
-    
-        // Calculate sleep duration based on speed level
-        let sleep_duration = Duration::from_millis(150 - (speed_level * 20));
+
+        // Calculate sleep duration based on the snake's current direction
+        let sleep_duration = match snake.direction {
+            Direction::Left | Direction::Right => {
+                let delay = HORIZONTAL_DELAY.saturating_sub(speed_level * 20);
+                Duration::from_millis(std::cmp::max(delay, MINIMUM_DELAY))
+            },
+            Direction::Up | Direction::Down => {
+                let delay = VERTICAL_DELAY.saturating_sub(speed_level * 20);
+                Duration::from_millis(std::cmp::max(delay, MINIMUM_DELAY))
+            },
+        };        
 
         terminal.draw(|f| {
             let size = f.size();
