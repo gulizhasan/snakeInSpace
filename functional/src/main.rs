@@ -253,6 +253,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Add a speed level variable
     let mut speed_level = 1;
 
+    // Easter egg flag
+    let mut easter_egg_shown = false;
+
     'game_loop: loop {
         if event::poll(Duration::from_millis(100))? {
             if let event::Event::Key(KeyEvent {
@@ -272,6 +275,31 @@ fn main() -> Result<(), Box<dyn Error>> {
                     _ => {}
                 }
             }
+        }
+
+        // Easter egg
+        if score == 1 && !easter_egg_shown {
+            terminal.draw(|f| {
+                let size = f.size();
+                let text = "Easter Egg: 20049623";
+
+                // Calculate the center position for the paragraph
+                let text_length = text.len() as u16;
+                let x_center = (size.width.saturating_sub(text_length)) / 2;
+                let y_center = size.height / 2;
+
+                let paragraph = Paragraph::new(text)
+                    .style(Style::default().fg(Color::Green));
+                let rect = Rect::new(x_center, y_center, text_length, 3); // Adjust height as needed
+
+                f.render_widget(paragraph, rect);
+            })?;
+
+            // Set the flag to true to avoid showing it again
+            easter_egg_shown = true;
+
+            // Wait for 2 seconds before continuing
+            thread::sleep(Duration::from_secs(2));
         }
 
         let (snake_moved, ate_food, game_over) = snake.move_forward(terminal_dimensions, food.position, &meteors, &mut portal);
