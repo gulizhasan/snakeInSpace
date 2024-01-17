@@ -401,10 +401,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 f.render_widget(portal_widget, exit_rect); // Use original for exit
             }
 
-            // Portal generation logic
-            if !portal.active && last_portal_time.elapsed() > Duration::from_secs(30) {
+            // Portal generation logic based on time elapsed
+            if last_portal_time.elapsed() > Duration::from_secs(30) {
                 portal = Portal::new(terminal_dimensions, &snake);
-                last_portal_time = std::time::Instant::now();
+                last_portal_time = std::time::Instant::now(); // Reset the timer
             }
 
             // Render the score
