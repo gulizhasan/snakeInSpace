@@ -155,6 +155,7 @@ impl Food {
         let mut new_position;
 
         loop {
+            // Generate positions within the inner area, leaving 1 unit from the borders
             new_position = Point {
                 x: rng.gen_range(1..width as i32 - 1),
                 y: rng.gen_range(1..height as i32 - 1),
@@ -205,12 +206,12 @@ impl Portal {
 
         loop {
             entry_position = Point {
-                x: rng.gen_range(1..width as i32 - 1),
-                y: rng.gen_range(1..height as i32 - 1),
+                x: rng.gen_range(2..width as i32 - 2),
+                y: rng.gen_range(2..height as i32 - 2),
             };
             exit_position = Point {
-                x: rng.gen_range(1..width as i32 - 1),
-                y: rng.gen_range(1..height as i32 - 1),
+                x: rng.gen_range(2..width as i32 - 2),
+                y: rng.gen_range(2..height as i32 - 2),
             };
             if !snake.body.contains(&entry_position)
                 && !snake.body.contains(&exit_position)
