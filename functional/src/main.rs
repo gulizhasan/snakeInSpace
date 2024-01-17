@@ -79,65 +79,40 @@ impl Snake {
         food_position: Point,
         meteors: &[Meteor],
         portal: &mut Portal,
-    ) -> (bool, bool) {
+    ) -> (bool, bool, bool) {
         let head = self.body[0];
         let mut new_head = match self.direction {
-            Direction::Up => Point {
-                x: head.x,
-                y: head.y - 1,
-            },
-            Direction::Down => Point {
-                x: head.x,
-                y: head.y + 1,
-            },
-            Direction::Left => Point {
-                x: head.x - 1,
-                y: head.y,
-            },
-            Direction::Right => Point {
-                x: head.x + 1,
-                y: head.y,
-            },
+            Direction::Up => Point { x: head.x, y: head.y - 1 },
+            Direction::Down => Point { x: head.x, y: head.y + 1 },
+            Direction::Left => Point { x: head.x - 1, y: head.y },
+            Direction::Right => Point { x: head.x + 1, y: head.y },
         };
-
-        // Check for self-collision
-        if self.body.contains(&new_head) {
-            return (false, false); // Collision with itself
+    
+        // Check for self-collision and meteors collision
+        if self.body.contains(&new_head) || meteors.iter().any(|m| m.position == new_head) {
+            return (false, false, true); // Collision occurred
         }
-
-        // Check for collision with meteors
-        if meteors.iter().any(|m| m.position == new_head) {
-            return (false, false); // Collision with a meteor
-        }
-
+    
         // Portal teleportation logic
         if portal.active && (new_head == portal.entry || new_head == portal.exit) {
-            new_head = if new_head == portal.entry {
-                portal.exit
-            } else {
-                portal.entry
-            };
+            new_head = if new_head == portal.entry { portal.exit } else { portal.entry };
             portal.active = false; // Deactivate the portal after use
         }
-
+    
         // Check if the new head is within the terminal bounds
-        if new_head.x >= 0
-            && new_head.y >= 0
-            && new_head.x < terminal_size.0 as i32 - 2
-            && new_head.y < terminal_size.1 as i32 - 2
-        {
-            let ate_food = new_head == food_position; // Check if snake ate the food
+        if new_head.x >= 0 && new_head.y >= 0 && new_head.x < terminal_size.0 as i32 - 2 && new_head.y < terminal_size.1 as i32 - 2 {
+            let ate_food = new_head == food_position;
             self.body.insert(0, new_head);
-
+    
             if !ate_food {
                 self.body.pop(); // Remove the last segment if food is not eaten
             }
-
-            (true, ate_food) // Return true for successful movement, and whether food was eaten
+    
+            return (true, ate_food, false); // Successful movement, food eaten status, no collision
         } else {
-            (false, false) // Return false for collision with wall, and false for food not eaten
+            return (false, false, true); // Collision with wall
         }
-    }
+    }    
 
     // Changes the snake's direction unless it's directly opposite to current direction
     fn change_direction(&mut self, new_direction: Direction) {
@@ -299,8 +274,35 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        let (snake_moved, ate_food) =
-            snake.move_forward(terminal_dimensions, food.position, &meteors, &mut portal);
+        let (snake_moved, ate_food, game_over) = snake.move_forward(terminal_dimensions, food.position, &meteors, &mut portal);
+
+        if game_over {
+            // Display game over message
+            terminal.draw(|f| {
+                let size = f.size();
+                let text = format!("Game Over! Your score: {} \nPress any key to exit.", score);
+        
+                // Find the length of the longest line
+                let max_line_length = text.lines().map(str::len).max().unwrap_or(0) as u16;
+        
+                // Adjust the number of lines for the message
+                let num_lines = text.matches('\n').count() as u16 + 1;
+        
+                // Center the paragraph in the terminal
+                let rect = Rect::new(
+                    (size.width.saturating_sub(max_line_length)) / 2,
+                    (size.height.saturating_sub(num_lines)) / 2,
+                    max_line_length,
+                    num_lines,
+                );
+        
+                let paragraph = Paragraph::new(text)
+                    .style(Style::default().fg(Color::Red));
+                f.render_widget(paragraph, rect);
+            })?;
+            event::read()?; // Wait for key press
+            break 'game_loop;
+        }              
 
         if !snake_moved {
             // Handle game over due to collision with meteors or border
