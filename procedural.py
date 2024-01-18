@@ -32,6 +32,15 @@ def create_portals(snake, food, meteors, window, sh, sw):
     return portals
 
 
+def change_direction(key, current_direction):
+    opposite_directions = {'up': curses.KEY_DOWN, 'down': curses.KEY_UP,
+                           'left': curses.KEY_RIGHT, 'right': curses.KEY_LEFT}
+    # Check if the new key press is not the opposite of the current direction
+    if key != opposite_directions[current_direction]:
+        return key
+    return None
+
+
 def snake_game(stdscr):
     curses.start_color()
     curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
@@ -63,9 +72,6 @@ def snake_game(stdscr):
 
     meteors = create_meteors(snake, food, w, sh, sw)
 
-    # Initialise portal regeneration timer to the start of the game
-    last_portal_time = time.time()
-
     # Generate the initial pair of portals
     portals = create_portals(snake, food, meteors, w, sh, sw)
     for portal in portals:
@@ -87,24 +93,16 @@ def snake_game(stdscr):
         w.addch(sh - 1, x, 'X')
 
     vertical_speed_adjustment = 2  # Slow down vertical movement
-    easter_egg_triggered = False # Easter egg condition
+    easter_egg_triggered = False  # Easter egg condition
 
     while True:
         next_key = w.getch()
         if next_key != -1:
-            if (next_key == curses.KEY_DOWN and current_direction != 'up') or \
-                (next_key == curses.KEY_UP and current_direction != 'down') or \
-                (next_key == curses.KEY_LEFT and current_direction != 'right') or \
-                    (next_key == curses.KEY_RIGHT and current_direction != 'left'):
-                key = next_key
-                if key == curses.KEY_DOWN:
-                    current_direction = 'down'
-                elif key == curses.KEY_UP:
-                    current_direction = 'up'
-                elif key == curses.KEY_LEFT:
-                    current_direction = 'left'
-                elif key == curses.KEY_RIGHT:
-                    current_direction = 'right'
+            new_direction = change_direction(next_key, current_direction)
+            if new_direction:
+                key = new_direction
+                current_direction = {curses.KEY_DOWN: 'down', curses.KEY_UP: 'up',
+                                     curses.KEY_LEFT: 'left', curses.KEY_RIGHT: 'right'}[key]
 
         new_head = [snake[0][0], snake[0][1]]
 
@@ -147,7 +145,8 @@ def snake_game(stdscr):
         # Check for Easter egg condition
         if score == 10 and not easter_egg_triggered:
             easter_egg_triggered = True
-            w.addstr(1, sw//2 - len("Easter Egg: 20049623")//2, "Easter Egg: 20049623", curses.color_pair(2))
+            w.addstr(1, sw//2 - len("Easter Egg: 20049623")//2,
+                     "Easter Egg: 20049623", curses.color_pair(2))
 
         # Portal logic
         portal_used = False
@@ -194,11 +193,6 @@ def snake_game(stdscr):
     w.addstr(sh//2, sw//2 - len(game_over_msg)//2, game_over_msg)
     w.refresh()
     time.sleep(2)  # Pause for 2 seconds on the Game Over screen
-
-    # Reset speed to normal after each loop iteration
-    w.timeout(current_speed)
-    w.clear()
-    w.refresh()
 
 
 def main():
