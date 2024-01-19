@@ -278,7 +278,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         // Easter egg
-        if score == 1 && !easter_egg_shown {
+        if score == 10 && !easter_egg_shown {
             terminal.draw(|f| {
                 let size = f.size();
                 let text = "Easter Egg: 20049623";
