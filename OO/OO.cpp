@@ -417,29 +417,22 @@ public:
                 }
             }
 
-            // Check for collision with the border
-            if (snake.checkCollision(width, height))
+            // Collision checks
+            if (snake.checkCollision(width, height) || snake.checkSelfCollision() || checkMeteorCollision())
             {
-                cout << "Game Over - Border Collision!" << endl;
-                break; // Exit the game loop
-            }
+                clearScreen(); // Clear the screen
 
-            // Check for collision with self
-            if (snake.checkCollision(width, height) || snake.checkSelfCollision())
-            {
-                cout << "Game Over - Collision Detected!" << endl;
-                break; // Exit the game loop
-            }
+                string gameOverMessage = "Game Over! Score: "+ to_string(score);
 
-            // Check for collision with meteors
-            if (checkMeteorCollision())
-            {
-                cout << "Game Over - Meteor Collision!" << endl;
-                break; // Exit the game loop
-            }
+                int gameOverStartPos = (width - gameOverMessage.length()) / 2;
 
-            usleep(sleepDuration);              // Use the sleepDuration variable
-            cout << "Score: " << score << endl; // Display the score after each draw
+                // Centering Game Over Message
+                gotoxy(gameOverStartPos, height / 2 - 1);
+                cout << gameOverMessage << endl;
+
+                sleep(2); // Wait for 2 seconds (Unix/Linux), use Sleep(2000) on Windows
+                break;    // Exit the game loop
+            }
         }
     }
 };
