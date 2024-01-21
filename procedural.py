@@ -6,7 +6,7 @@ import time
 def create_food(snake, window, sh, sw):
     food = None
     while food is None:
-        food = [random.randint(1, sh - 2), random.randint(1, sw - 2)]
+        food = [random.randint(1, sh - 2), random.randint(1, sw - 3)]
         if food in snake:
             food = None
     window.addch(food[0], food[1], curses.ACS_PI)
@@ -26,8 +26,9 @@ def create_meteors(snake, food, window, sh, sw, num_meteors=5):
 def create_portals(snake, food, meteors, window, sh, sw):
     portals = []
     while len(portals) < 2:
-        portal = [random.randint(1, sh - 2), random.randint(1, sw - 2)]
-        if portal not in snake and portal != food and portal not in meteors:
+        portal = [random.randint(1, sh - 2), random.randint(1, sw - 3)]
+        if (portal not in snake and portal != food and portal not in meteors and
+                all(1 < p < sh - 2 and 1 < q < sw - 3 for p, q in portals)):
             portals.append(portal)
     return portals
 
@@ -75,7 +76,7 @@ def snake_game(stdscr):
     # Generate the initial pair of portals
     portals = create_portals(snake, food, meteors, w, sh, sw)
     for portal in portals:
-        w.addch(portal[0], portal[1], 'O', curses.color_pair(2))
+        w.addch(portal[0], portal[1], '@', curses.color_pair(2))
 
     # Variables to track last portal used and time since last portal use
     last_portal_used_time = 0
@@ -166,7 +167,7 @@ def snake_game(stdscr):
                 w.addch(portal[0], portal[1], ' ')
             portals = create_portals(snake, food, meteors, w, sh, sw)
             for portal in portals:
-                w.addch(portal[0], portal[1], 'O', curses.color_pair(2))
+                w.addch(portal[0], portal[1], '@', curses.color_pair(2))
             last_portal_time = current_time
 
         # Border collision detection
