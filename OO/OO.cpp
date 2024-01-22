@@ -241,18 +241,31 @@ private:
         {
             for (int x = 0; x < width; ++x)
             {
-                // Check if we are at the top row where the score should be printed
-                if (y == 0 && x >= scoreStartPos && x < width - 1)
+                // Draw the top border with the score
+                if (y == 0)
                 {
-                    cout << scoreStr[x - scoreStartPos];
+                    if (x < scoreStartPos || x >= width - 1)
+                    {
+                        cout << "\033[37mX\033[0m"; // White border
+                    }
+                    else if (x >= scoreStartPos && x < scoreStartPos + scoreStr.length())
+                    {
+                        cout << "\033[37m" << scoreStr[x - scoreStartPos] << "\033[0m";
+                    }
                 }
-                else if (y == 0 || y == height - 1 || x == 0 || x == width - 1)
+                // Draw the bottom border
+                else if (y == height - 1)
                 {
-                    cout << "X"; // Border
+                    cout << "\033[37mX\033[0m"; // White border
+                }
+                // Draw game elements within the borders
+                else if (x == 0 || x == width - 1)
+                {
+                    cout << "\033[37mX\033[0m"; // White border
                 }
                 else if (isSnakePosition(x, y))
                 {
-                    cout << "O"; // Snake
+                    cout << "\033[37mO\033[0m"; // White snake
                 }
                 else if (isMeteorPosition(x, y))
                 {
@@ -260,7 +273,7 @@ private:
                 }
                 else if (x == food.position.x && y == food.position.y)
                 {
-                    cout << "\u03C0"; // Pi symbol for food
+                    cout << "\033[37m\u03C0\033[0m"; // White Pi symbol for food
                 }
                 else if (portal1.isActive && x == portal1.position.x && y == portal1.position.y)
                 {
@@ -422,13 +435,12 @@ public:
             {
                 clearScreen(); // Clear the screen
 
-                string gameOverMessage = "Game Over! Score: "+ to_string(score);
-
+                string gameOverMessage = "Game Over! Score: " + to_string(score);
                 int gameOverStartPos = (width - gameOverMessage.length()) / 2;
 
                 // Centering Game Over Message
                 gotoxy(gameOverStartPos, height / 2 - 1);
-                cout << gameOverMessage << endl;
+                cout << "\033[31m" << gameOverMessage << "\033[0m" << endl; // Red color for Game Over message
 
                 sleep(2); // Wait for 2 seconds (Unix/Linux), use Sleep(2000) on Windows
                 break;    // Exit the game loop

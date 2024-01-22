@@ -82,37 +82,57 @@ impl Snake {
     ) -> (bool, bool, bool) {
         let head = self.body[0];
         let mut new_head = match self.direction {
-            Direction::Up => Point { x: head.x, y: head.y - 1 },
-            Direction::Down => Point { x: head.x, y: head.y + 1 },
-            Direction::Left => Point { x: head.x - 1, y: head.y },
-            Direction::Right => Point { x: head.x + 1, y: head.y },
+            Direction::Up => Point {
+                x: head.x,
+                y: head.y - 1,
+            },
+            Direction::Down => Point {
+                x: head.x,
+                y: head.y + 1,
+            },
+            Direction::Left => Point {
+                x: head.x - 1,
+                y: head.y,
+            },
+            Direction::Right => Point {
+                x: head.x + 1,
+                y: head.y,
+            },
         };
-    
+
         // Check for self-collision and meteors collision
         if self.body.contains(&new_head) || meteors.iter().any(|m| m.position == new_head) {
             return (false, false, true); // Collision occurred
         }
-    
+
         // Portal teleportation logic
         if portal.active && (new_head == portal.entry || new_head == portal.exit) {
-            new_head = if new_head == portal.entry { portal.exit } else { portal.entry };
+            new_head = if new_head == portal.entry {
+                portal.exit
+            } else {
+                portal.entry
+            };
             portal.active = false; // Deactivate the portal after use
         }
-    
+
         // Check if the new head is within the terminal bounds
-        if new_head.x >= 0 && new_head.y >= 0 && new_head.x < terminal_size.0 as i32 - 2 && new_head.y < terminal_size.1 as i32 - 2 {
+        if new_head.x >= 0
+            && new_head.y >= 0
+            && new_head.x < terminal_size.0 as i32 - 2
+            && new_head.y < terminal_size.1 as i32 - 2
+        {
             let ate_food = new_head == food_position;
             self.body.insert(0, new_head);
-    
+
             if !ate_food {
                 self.body.pop(); // Remove the last segment if food is not eaten
             }
-    
+
             return (true, ate_food, false); // Successful movement, food eaten status, no collision
         } else {
             return (false, false, true); // Collision with wall
         }
-    }    
+    }
 
     // Changes the snake's direction unless it's directly opposite to current direction
     fn change_direction(&mut self, new_direction: Direction) {
@@ -169,7 +189,8 @@ impl Portal {
             };
             if !snake.body.contains(&entry_position)
                 && !snake.body.contains(&exit_position)
-                && entry_position != exit_position {
+                && entry_position != exit_position
+            {
                 break;
             }
         }
@@ -288,8 +309,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let x_center = (size.width.saturating_sub(text_length)) / 2;
                 let y_center = size.height / 2;
 
-                let paragraph = Paragraph::new(text)
-                    .style(Style::default().fg(Color::Green));
+                let paragraph = Paragraph::new(text).style(Style::default().fg(Color::Green));
                 let rect = Rect::new(x_center, y_center, text_length, 3); // Adjust height as needed
 
                 f.render_widget(paragraph, rect);
@@ -302,20 +322,21 @@ fn main() -> Result<(), Box<dyn Error>> {
             thread::sleep(Duration::from_secs(2));
         }
 
-        let (snake_moved, ate_food, game_over) = snake.move_forward(terminal_dimensions, food.position, &meteors, &mut portal);
+        let (snake_moved, ate_food, game_over) =
+            snake.move_forward(terminal_dimensions, food.position, &meteors, &mut portal);
 
         if game_over {
             // Display game over message
             terminal.draw(|f| {
                 let size = f.size();
-                let text = format!("Game Over! Your score: {} \nPress any key to exit.", score);
-        
+                let text = format!("Game Over! Score: {} \nPress any key to exit.", score);
+
                 // Find the length of the longest line
                 let max_line_length = text.lines().map(str::len).max().unwrap_or(0) as u16;
-        
+
                 // Adjust the number of lines for the message
                 let num_lines = text.matches('\n').count() as u16 + 1;
-        
+
                 // Center the paragraph in the terminal
                 let rect = Rect::new(
                     (size.width.saturating_sub(max_line_length)) / 2,
@@ -323,14 +344,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                     max_line_length,
                     num_lines,
                 );
-        
-                let paragraph = Paragraph::new(text)
-                    .style(Style::default().fg(Color::Red));
+
+                let paragraph = Paragraph::new(text).style(Style::default().fg(Color::Red));
                 f.render_widget(paragraph, rect);
             })?;
             event::read()?; // Wait for key press
             break 'game_loop;
-        }              
+        }
 
         if !snake_moved {
             // Handle game over due to collision with meteors or border
@@ -352,12 +372,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             Direction::Left | Direction::Right => {
                 let delay = HORIZONTAL_DELAY.saturating_sub(speed_level * 20);
                 Duration::from_millis(std::cmp::max(delay, MINIMUM_DELAY))
-            },
+            }
             Direction::Up | Direction::Down => {
                 let delay = VERTICAL_DELAY.saturating_sub(speed_level * 20);
                 Duration::from_millis(std::cmp::max(delay, MINIMUM_DELAY))
-            },
-        };        
+            }
+        };
 
         terminal.draw(|f| {
             let size = f.size();
@@ -367,7 +387,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 for x in 0..size.width {
                     if x == 0 || x == size.width - 1 || y == 0 || y == size.height - 1 {
                         let rect = Rect::new(x, y, 1, 1);
-                        let border_char = Paragraph::new(Spans::from(Span::raw("X")));
+                        let border_char = Paragraph::new(Spans::from(Span::styled(
+                            "X",
+                            Style::default().fg(Color::White), // Set border color to white
+                        )));
                         f.render_widget(border_char, rect);
                     }
                 }
